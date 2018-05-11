@@ -12,6 +12,7 @@ drop procedure if exists USER_SIGN_UP;
 delimiter $$
 create procedure USER_SIGN_UP(IN user_name char(32), IN user_password char(32), OUT user_cid int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		# Add a temporary flag column in order to find the new user after insertion.
 		alter table CLIENT add column __TMP_FLAG_COLUMN__ boolean not null default FALSE;
@@ -35,6 +36,7 @@ drop procedure if exists USER_SIGN_IN;
 delimiter $$
 create procedure USER_SIGN_IN(IN user_cid int, IN user_password char(32), OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -57,6 +59,7 @@ drop procedure if exists USER_SIGN_OUT;
 delimiter $$
 create procedure USER_SIGN_OUT(IN user_cid int, IN user_password char(32), OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -78,6 +81,7 @@ drop procedure if exists USER_GET_NAME;
 delimiter $$
 create procedure USER_GET_NAME(IN user_cid int, IN user_password char(32), OUT user_name char(32), OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -103,12 +107,36 @@ drop procedure if exists USER_RENAME;
 delimiter $$
 create procedure USER_RENAME(IN user_cid int, IN user_password char(32), IN user_name char(32), OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
 		if granted>0 then
 			update CLIENT set CNAME=user_name, CACTIVE=CURRENT_TIMESTAMP
 				where CID=user_cid;
+		end if;
+		commit;
+	end $$
+delimiter ;
+
+/*==============================================================*/
+/* Search-by-name procedure                                     */
+/* IN <- CID of a user.                                         */
+/*    <- Password of this user.                                 */
+/*    <- Name of some users.                                    */
+/* OUT -> Authorization granted (correct password) or not.      */
+/*==============================================================*/
+drop procedure if exists USER_SEARCH;
+delimiter $$
+create procedure USER_SEARCH(IN user_cid int, IN user_password char(32), IN other_name char(32), OUT granted int)
+	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
+		start transaction;
+		set granted=(select count(CID) from CLIENT
+			where CID=user_cid and CPASSWORD=user_password);
+		if granted>0 then
+			select CID, CNAME from CLIENT
+				where CNAME=other_name;
 		end if;
 		commit;
 	end $$
@@ -126,6 +154,7 @@ drop procedure if exists USER_CHANGE_PASSWORD;
 delimiter $$
 create procedure USER_CHANGE_PASSWORD(IN user_cid int, IN user_password char(32), IN new_password char(32), OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -149,6 +178,7 @@ drop procedure if exists USER_GET_FRIEND;
 delimiter $$
 create procedure USER_GET_FRIEND(IN user_cid int, IN user_password char(32), OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -174,6 +204,7 @@ drop procedure if exists USER_FRIEND_APPLICATION;
 delimiter $$
 create procedure USER_FRIEND_APPLICATION(IN user_cid int, IN user_password char(32), IN fa_cid int, OUT faid int, OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -207,6 +238,7 @@ drop procedure if exists USER_GET_FRIEND_APPLICATION;
 delimiter $$
 create procedure USER_GET_FRIEND_APPLICATION(IN user_cid int, IN user_password char(32), OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -231,6 +263,7 @@ drop procedure if exists USER_ACCEPT_FRIEND_APPLICATION;
 delimiter $$
 create procedure USER_ACCEPT_FRIEND_APPLICATION(IN user_cid int, IN user_password char(32), IN faid int, OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -261,6 +294,7 @@ drop procedure if exists USER_REFUSE_FRIEND_APPLICATION;
 delimiter $$
 create procedure USER_REFUSE_FRIEND_APPLICATION(IN user_cid int, IN user_password char(32), IN faid int, OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
@@ -285,6 +319,7 @@ drop procedure if exists USER_DELETE_FRIEND;
 delimiter $$
 create procedure USER_DELETE_FRIEND(IN user_cid int, IN user_password char(32), IN other_user_id int, OUT granted int)
 	begin
+		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);

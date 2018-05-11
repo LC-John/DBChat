@@ -1,6 +1,8 @@
 
 use DBChat;
 
+alter table INSESSION add column SPASSWORD char(32);
+
 alter table INSESSION drop foreign key FK_INSESSION;
 alter table INSESSION add constraint FK_INSESSION foreign key (CID)
       references CLIENT (CID) on delete cascade on update cascade;
