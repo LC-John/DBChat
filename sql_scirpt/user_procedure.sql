@@ -170,7 +170,6 @@ delimiter ;
 /* Get-friend procedure                                         */
 /* IN <- CID of a user.                                         */
 /*    <- Password of this user.                                 */
-/*    <- New password of this user.                             */
 /* OUT -> Authorization granted (correct password) or not.      */
 /* TABLE -> CIDs and names of this user's friends.              */
 /*==============================================================*/
