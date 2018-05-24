@@ -45,18 +45,19 @@ create procedure MSG_GET(IN user_cid int, IN user_pswd char(32), IN sess_sid int
 	begin
 		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
-		set granted=(select count(CID) from CLIENT
-			where CID=user_cid and CPASSWORD=user_pswd);
+		set granted=(select count(c.CID) from CLIENT as c
+			where c.CID=user_cid and c.CPASSWORD=user_pswd);
 		if granted>0 then
-			set granted=(select count(*) from INSESSION
-				where CID=user_cid and SID=sess_sid);
+			set granted=(select count(*) from INSESSION as i
+				where i.CID=user_cid and i.SID=sess_sid);
 			if granted>0 then
-				select MID, CID, MTEXT, MBIRTH from MSG
-					where SID=sess_sid;
-				update CLIENT set CACTIVE=CURRENT_TIMESTAMP
-					where CID=user_cid;
-				update SESSION set SACTIVE=CURRENT_TIMESTAMP
-					where SID=sess_sid;
+				select m.MID, c.CID, c.CNAME, m.MTEXT, m.MBIRTH from MSG as m, CLIENT as c
+					where m.SID=sess_sid and m.CID=c.CID
+						order by m.MBIRTH desc;
+				update CLIENT set CLIENT.CACTIVE=CURRENT_TIMESTAMP
+					where CLIENT.CID=user_cid;
+				update SESSION set SESSION.SACTIVE=CURRENT_TIMESTAMP
+					where SESSION.SID=sess_sid;
 			end if;
 		end if;
 		commit;

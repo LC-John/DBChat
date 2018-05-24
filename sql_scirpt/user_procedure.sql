@@ -207,19 +207,25 @@ create procedure USER_FRIEND_APPLICATION(IN user_cid int, IN user_password char(
 		start transaction;
 		set granted=(select count(CID) from CLIENT
 			where CID=user_cid and CPASSWORD=user_password);
-		if granted>0
-			and (select count(*) from KNOWS where (CID=user_cid and CLI_CID=fa_cid)
-					or (CID=fa_cid and CLI_CID=user_cid))=0
-			and (select count(*) from FRIENDAPPLICATION where (CID=user_cid and CLI_CID=fa_cid)
-					or (CID=fa_cid and CLI_CID=user_cid))=0 then
-				update CLIENT set CACTIVE=CURRENT_TIMESTAMP
-					where CID=user_cid;
-
-				alter table FRIENDAPPLICATION add column __TMP_FLAG_COLUMN__ boolean not null default FALSE;
-				insert into FRIENDAPPLICATION(CID, CLI_CID, __TMP_FLAG_COLUMN__) values (user_cid, fa_cid, TRUE);
-				set faid=(select FRIENDAPPLICATION.FAID from FRIENDAPPLICATION
-					where FRIENDAPPLICATION.__TMP_FLAG_COLUMN__=TRUE);
-				alter table FRIENDAPPLICATION drop column __TMP_FLAG_COLUMN__;
+		if granted>0 then
+			update CLIENT set CACTIVE=CURRENT_TIMESTAMP
+				where CID=user_cid;
+			set granted=(select count(*) from KNOWS
+				where (CID=user_cid and CLI_CID=fa_cid)
+					or (CID=fa_cid and CLI_CID=user_cid));
+			if granted=0 then
+				set granted=(select count(*) from FRIENDAPPLICATION
+					where (CID=user_cid and CLI_CID=fa_cid)
+						or (CID=fa_cid and CLI_CID=user_cid));
+				if granted=0 then
+					set granted=1;
+					alter table FRIENDAPPLICATION add column __TMP_FLAG_COLUMN__ boolean not null default FALSE;
+					insert into FRIENDAPPLICATION(CID, CLI_CID, __TMP_FLAG_COLUMN__) values (user_cid, fa_cid, TRUE);
+					set faid=(select FRIENDAPPLICATION.FAID from FRIENDAPPLICATION
+						where FRIENDAPPLICATION.__TMP_FLAG_COLUMN__=TRUE);
+					alter table FRIENDAPPLICATION drop column __TMP_FLAG_COLUMN__;
+				end if;
+			end if;
 		end if;
 		commit;
 	end $$
@@ -264,19 +270,22 @@ create procedure USER_ACCEPT_FRIEND_APPLICATION(IN user_cid int, IN user_passwor
 	begin
 		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
-		set granted=(select count(CID) from CLIENT
-			where CID=user_cid and CPASSWORD=user_password);
-		if granted>0
-			and (select count(*) from FRIENDAPPLICATION where FAID=faid and CLI_CID=user_cid)>0 then
-				update CLIENT set CACTIVE=CURRENT_TIMESTAMP
-					where CID=user_cid;
+		set granted=(select count(CID) from CLIENT as c
+			where c.CID=user_cid and c.CPASSWORD=user_password);
+		if granted>0 then
+			set granted=(select count(*) from FRIENDAPPLICATION as fa
+				where fa.FAID=faid and fa.CLI_CID=user_cid);
+			update CLIENT set CLIENT.CACTIVE=CURRENT_TIMESTAMP
+				where CLIENT.CID=user_cid;
+			if granted>0 then
 				insert into KNOWS(CID, CLI_CID)
 					select fa.CID, fa.CLI_CID from FRIENDAPPLICATION as fa
 						where fa.FAID=faid;
 				insert into KNOWS(CLI_CID, CID)
 					select fa.CID, fa.CLI_CID from FRIENDAPPLICATION as fa
 						where fa.FAID=faid;
-				delete from FRIENDAPPLICATION where FAID=faid;
+				delete from FRIENDAPPLICATION where FRIENDAPPLICATION.FAID=faid;
+			end if;
 		end if;
 		commit;
 	end $$
@@ -295,13 +304,16 @@ create procedure USER_REFUSE_FRIEND_APPLICATION(IN user_cid int, IN user_passwor
 	begin
 		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
-		set granted=(select count(CID) from CLIENT
-			where CID=user_cid and CPASSWORD=user_password);
-		if granted>0
-			and (select count(*) from FRIENDAPPLICATION where FAID=faid and CLI_CID=user_cid)>0 then
-				update CLIENT set CACTIVE=CURRENT_TIMESTAMP
-					where CID=user_cid;
-				delete from FRIENDAPPLICATION where FAID=faid;
+		set granted=(select count(CID) from CLIENT as c
+			where c.CID=user_cid and c.CPASSWORD=user_password);
+		if granted>0 then
+			set granted=(select count(*) from FRIENDAPPLICATION as fa
+				where fa.FAID=faid and fa.CLI_CID=user_cid);
+			update CLIENT set CLIENT.CACTIVE=CURRENT_TIMESTAMP
+				where CLIENT.CID=user_cid;
+			if granted>0 then
+				delete from FRIENDAPPLICATION where FRIENDAPPLICATION.FAID=faid;
+			end if;
 		end if;
 		commit;
 	end $$
@@ -321,14 +333,18 @@ create procedure USER_DELETE_FRIEND(IN user_cid int, IN user_password char(32), 
 		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
 		set granted=(select count(CID) from CLIENT
-			where CID=user_cid and CPASSWORD=user_password);
-		if granted>0
-			and (select count(*) from FRIENDAPPLICATION where FAID=faid and CLI_CID=user_cid)>0 then
-				update CLIENT set CACTIVE=CURRENT_TIMESTAMP
-					where CID=user_cid;
+			where user_cid!=other_user_id and CID=user_cid and CPASSWORD=user_password);
+		if granted>0 then
+			set granted=(select count(CID) from KNOWS
+				where (CID=user_cid and CLI_CID=other_user_id)
+					or (CLI_CID=user_cid and CID=other_user_id));
+			update CLIENT set CACTIVE=CURRENT_TIMESTAMP
+				where CID=user_cid;
+			if granted>0 then
 				delete from KNOWS
 					where (CID=user_cid and CLI_CID=other_user_id)
 						or (CID=other_user_id and CLI_CID=user_cid);
+			end if;
 		end if;
 		commit;
 	end $$

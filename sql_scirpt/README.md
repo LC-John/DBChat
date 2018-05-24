@@ -81,7 +81,7 @@ Procedures for sessions are defined in this script. Notice that all possible and
 
 **SESSION_LEAVE** allows a non-manager user to leave a visible session, if granted. Users in an invisible session are actually both managers, so they can only dismiss the session, but none of them are allowed to leave.
 
-##session_procedure.sql
+##msg_procedure.sql
 
 Procedures for messages are defined in this script. Notice that all possible and allowable behaviors about messages of an user in a session are defined with a stored-procedure.
 

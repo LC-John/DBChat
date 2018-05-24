@@ -17,23 +17,28 @@ create procedure SESSION_CREATE_FRIEND(IN user_cid int, IN user_pswd char(32), I
 		declare name2 char(32);
 		declare EXIT HANDLER for SQLEXCEPTION rollback;
 		start transaction;
-		set granted=(select count(CID) from CLIENT
-			where CID=user_cid and CPASSWORD=user_pswd);
+		set granted=(select count(c.CID) from CLIENT as c
+			where c.CID=user_cid and c.CPASSWORD=user_pswd);
 		if granted>0 then
-			set granted=(select count(*) from KNOWS
-				where KNOWS.CID=user_cid and KNOWS.CLI_CID=other_cid);
+			set granted=(select count(*) from SESSION as s, INSESSION as is1, INSESSION as is2
+				where s.SVISIBLE=FALSE and s.SID=is1.SID and s.SID=is2.SID and is1.CID!=is2.CID and
+					((is1.CID=user_cid and is2.CID=other_cid) or (is1.CID=other_cid and is2.CID=user_cid)))=0;
 			if granted>0 then
-				set name1=(select CNAME from CLIENT where CID=user_cid);
-				set name2=(select CNAME from CLIENT where CID=other_cid);
-				alter table SESSION add column __TMP_FLAG_COLUMN__ boolean not null default FALSE;
-				insert into SESSION(CID, SNAME, SPASSWORD, SVISIBLE, __TMP_FLAG_COLUMN__)
-					values (user_cid, CONCAT(name1," and ",name2,"'s session"), '', FALSE, TRUE);
-				set sess_sid=(select SESSION.SID from SESSION where SESSION.__TMP_FLAG_COLUMN__=TRUE);
-				insert into INSESSION(SID, CID, SPASSWORD) values
-					(sess_sid, user_cid, ''), (sess_sid, other_cid, '');
-				alter table SESSION drop column __TMP_FLAG_COLUMN__;
-				update CLIENT set CACTIVE=CURRENT_TIMESTAMP
-					where CID=user_cid;
+				set granted=(select count(*) from KNOWS
+					where KNOWS.CID=user_cid and KNOWS.CLI_CID=other_cid);
+				if granted>0 then
+					set name1=(select c.CNAME from CLIENT as c where c.CID=user_cid);
+					set name2=(select c.CNAME from CLIENT as c where c.CID=other_cid);
+					alter table SESSION add column __TMP_FLAG_COLUMN__ boolean not null default FALSE;
+					insert into SESSION(CID, SNAME, SPASSWORD, SVISIBLE, __TMP_FLAG_COLUMN__)
+						values (user_cid, CONCAT(name1," and ",name2), '', FALSE, TRUE);
+					set sess_sid=(select SESSION.SID from SESSION where SESSION.__TMP_FLAG_COLUMN__=TRUE);
+					insert into INSESSION(SID, CID, SPASSWORD) values
+						(sess_sid, user_cid, ''), (sess_sid, other_cid, '');
+					alter table SESSION drop column __TMP_FLAG_COLUMN__;
+					update CLIENT set CLIENT.CACTIVE=CURRENT_TIMESTAMP
+						where CLIENT.CID=user_cid;
+				end if;
 			end if;
 		end if;
 		commit;
@@ -186,8 +191,9 @@ create procedure SESSION_GET_OTHERS_INSESSION(IN user_cid int, IN user_pswd char
 			set granted=(select count(*) from INSESSION
 				where SID=sess_sid and CID=user_cid);
 			if granted>0 then
-				select c.CID, c.CNAME, s.CID=c.CID as MANAGER from CLIENT as c, INSESSION as i, SESSION as s
-					where i.SID=sess_sid and i.CID=c.CID and s.SID=sess_sid;
+				select c.CID, c.CNAME, (s.CID=c.CID or s.SVISIBLE=FALSE) as MANAGER from CLIENT as c, INSESSION as i, SESSION as s
+					where i.SID=sess_sid and i.CID=c.CID and s.SID=sess_sid
+						order by MANAGER desc;
 				update SESSION set SACTIVE=CURRENT_TIMESTAMP
 					where SID=sess_sid;
 				update CLIENT set CACTIVE=CURRENT_TIMESTAMP
