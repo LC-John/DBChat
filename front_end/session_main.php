@@ -105,7 +105,7 @@
                     </li>
 
                     <li role="presentation"><a href="session_main.php" target="_self">Refresh</a></li>
-                    &nbsp&nbsp&nbsp&nbsp
+                    &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
 
                 </ul>
 			</div><!-- /.navbar-collapse -->
