@@ -53,3 +53,9 @@ session_main.php
 manager dash board
 
 ![image](https://github.com/LC-John/DBChat/blob/master/img/manager.png)
+
+## To be continued
+
+Auto refreshing.
+Image messages.
+...
