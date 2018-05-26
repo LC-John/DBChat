@@ -2,6 +2,7 @@
 	session_start();
 	if(isset($_POST["submit"]) && $_POST["submit"] == "signin")
 	{
+            $_POST['password'] = md5(sha1($_POST['password']));
 		$conn = mysqli_connect("47.94.138.231", "user_dbchat", "", "DBChat");
 		if (!$conn)
 		{

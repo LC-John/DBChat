@@ -36,6 +36,8 @@
     }
     elseif ($_POST['submit'] == 'Password')
     {
+        $_POST['password'] = md5(sha1($_POST['password']));
+        $_POST['old_password'] = md5(sha1($_POST['old_password']));
         $conn = mysqli_connect("47.94.138.231", "user_dbchat", "", "DBChat");
         if (!$conn)
         {
