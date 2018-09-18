@@ -38,7 +38,7 @@ The PHP scripts are in the directory 'front_end'. See README.md in the directory
 
 ## Report
 
-See the report [![here]](
+See the report [here](
 https://github.com/LC-John/Notes-and-homeworks/blob/master/%E6%95%B0%E6%8D%AE%E5%BA%93%E6%A6%82%E8%AE%BA/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E6%9C%9F%E9%A1%B9%E7%9B%AE_DBChat.pdf)
 
 ## Example
